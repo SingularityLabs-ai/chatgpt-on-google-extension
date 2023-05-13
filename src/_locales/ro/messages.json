@@ -1,8 +1,8 @@
 {
   "appName": {
-    "message": "SciGPT"
+    "message": "GoogleBard"
   },
   "appDesc": {
-    "message": "Rezumați și oferiți perspectivă cheie pentru orice articol arxiv"
+    "message": "Chat cu BARD pe toate căutările pe Google."
   }
 }

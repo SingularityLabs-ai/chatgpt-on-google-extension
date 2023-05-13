@@ -1,19 +1,23 @@
 import Browser from 'webextension-polyfill'
 import { getProviderConfigs, ProviderType } from '../config'
+import { BARDProvider } from './providers/bard'
 import { ChatGPTProvider, getChatGPTAccessToken, sendMessageFeedback } from './providers/chatgpt'
 import { OpenAIProvider } from './providers/openai'
-import { Provider } from './types'
+import { ConversationContext, Provider } from './types'
 
 async function generateAnswers(
   port: Browser.Runtime.Port,
   question: string,
   conversationId: string | undefined,
   parentMessageId: string | undefined,
+  conversationContext: ConversationContext | undefined,
 ) {
   const providerConfigs = await getProviderConfigs()
 
   let provider: Provider
-  if (providerConfigs.provider === ProviderType.ChatGPT) {
+  if (providerConfigs.provider === ProviderType.BARD) {
+    provider = new BARDProvider()
+  } else if (providerConfigs.provider === ProviderType.ChatGPT) {
     const token = await getChatGPTAccessToken()
     provider = new ChatGPTProvider(token)
   } else if (providerConfigs.provider === ProviderType.GPT3) {
@@ -39,8 +43,9 @@ async function generateAnswers(
       }
       port.postMessage(event.data)
     },
-    conversationId: conversationId,
-    parentMessageId: parentMessageId,
+    conversationId: conversationId, //used for chatGPT
+    parentMessageId: parentMessageId, //used for chatGPT
+    conversationContext: conversationContext, //used for BARD
   })
 }
 
@@ -48,7 +53,13 @@ Browser.runtime.onConnect.addListener((port) => {
   port.onMessage.addListener(async (msg) => {
     console.debug('received msg', msg)
     try {
-      await generateAnswers(port, msg.question, msg.conversationId, msg.parentMessageId)
+      await generateAnswers(
+        port,
+        msg.question,
+        msg.conversationId,
+        msg.parentMessageId,
+        msg.conversationContext,
+      )
     } catch (err: any) {
       console.error(err)
       port.postMessage({ error: err.message })

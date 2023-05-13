@@ -1,8 +1,8 @@
 {
   "appName": {
-    "message": "SciGPT"
+    "message": "GoogleBard"
   },
   "appDesc": {
-    "message": "Résumer et fournir des éclairages clés pour un article."
+    "message": "Discutez avec BARD sur toutes les recherches Google."
   }
 }

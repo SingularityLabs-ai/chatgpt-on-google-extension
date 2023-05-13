@@ -123,12 +123,22 @@ function ChatGPTQuery(props: Props) {
         questionIndex == 0
           ? answer?.messageId
           : requestionList[questionIndex - 1].answer?.messageId,
+      conversationContext:
+        questionIndex == 0
+          ? answer?.conversationContext
+          : requestionList[questionIndex - 1].answer?.conversationContext,
     })
     return () => {
       port.onMessage.removeListener(listener)
       port.disconnect()
     }
-  }, [requestionList, questionIndex, answer?.conversationId, answer?.messageId])
+  }, [
+    requestionList,
+    questionIndex,
+    answer?.conversationId,
+    answer?.messageId,
+    answer?.conversationContext,
+  ])
 
   // * Requery Handler Function
   const requeryHandler = useCallback(() => {
@@ -162,11 +172,10 @@ function ChatGPTQuery(props: Props) {
     return (
       <div className="markdown-body gpt-markdown" id="gpt-answer" dir="auto">
         <div className="gpt-header">
-          <span className="font-bold">SciGPT</span>
+          <span className="font-bold">GoogleBard</span>
           <span className="cursor-pointer leading-[0]" onClick={openOptionsPage}>
             <GearIcon size={14} />
           </span>
-          <span className="mx-2 text-base text-gray-500">{`"${props.promptSource}" prompt is used`}</span>
           <ChatGPTFeedback
             messageId={answer.messageId}
             conversationId={answer.conversationId}
@@ -184,7 +193,7 @@ function ChatGPTQuery(props: Props) {
               }`}</div>
               {reError ? (
                 <p>
-                  Failed to load response from ChatGPT:
+                  Failed to load response from BARD:
                   <span className="break-all block">{reError}</span>
                 </p>
               ) : requestion.index < requestionList.length - 1 ? (
@@ -212,10 +221,7 @@ function ChatGPTQuery(props: Props) {
               placeholder="Tell Me More"
               id="question"
             />
-            <button
-              id="submit"
-              onClick={requeryHandler}
-            >
+            <button id="submit" onClick={requeryHandler}>
               ASK
             </button>
           </form>
@@ -257,13 +263,13 @@ function ChatGPTQuery(props: Props) {
   if (error) {
     return (
       <p>
-        Failed to load response from ChatGPT:
+        Failed to load response from BARD:
         <span className="break-all block">{error}</span>
       </p>
     )
   }
 
-  return <p className="text-[#b6b8ba] animate-pulse">Waiting for ChatGPT summarize...</p>
+  return <p className="text-[#b6b8ba] animate-pulse">Waiting for BARD...</p>
 }
 
 export default memo(ChatGPTQuery)

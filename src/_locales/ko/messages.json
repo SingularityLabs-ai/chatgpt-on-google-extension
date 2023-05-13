@@ -1,8 +1,8 @@
 {
   "appName": {
-    "message": "SciGPT"
+    "message": "GoogleBard"
   },
   "appDesc": {
-    "message": "ChatGPT로 Arxiv논문의 인사이트를 제공합니다."
+    "message": "모든 Google 검색에서 BARD와 채팅하세요."
   }
 }
