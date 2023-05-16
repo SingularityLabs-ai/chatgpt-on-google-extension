@@ -84,7 +84,7 @@ Browser.runtime.onMessage.addListener(async (message) => {
 })
 
 Browser.runtime.onInstalled.addListener((details) => {
-  // if (details.reason === 'install') {
-  //   Browser.runtime.openOptionsPage()
-  // }
+  if (details.reason === 'install') {
+    Browser.runtime.openOptionsPage()
+  }
 })

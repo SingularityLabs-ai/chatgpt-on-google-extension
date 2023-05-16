@@ -101,6 +101,7 @@ async function run() {
       const question = found?.prompt ?? userConfig.prompt
       const promptSource = found?.site ?? 'default'
 
+      console.log('final prompt:', question + bodyInnerText)
       mount(question + bodyInnerText, promptSource, siteConfig)
     }
   }
