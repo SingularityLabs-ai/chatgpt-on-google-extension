@@ -73,15 +73,21 @@ function OptionsPage(props: { theme: Theme; onThemeChange: (theme: Theme) => voi
           <span className="font-semibold">GoogleBard(v{getExtensionVersion()})</span>
         </div>
         <div className="flex flex-row gap-3">
+          <a href="https://discord.gg/sXdRc6ZH" target="_blank" rel="noreferrer">
+            Discord
+          </a>
           <a
-            href="https://github.com/ishandutta2007/chatgpt-scientific-publications-extension/issues"
+            href="https://github.com/ishandutta2007/bard-google-extension/issues"
             target="_blank"
             rel="noreferrer"
           >
             Feedback
           </a>
+          <a href="https://twitter.com/ishandutta2007" target="_blank" rel="noreferrer">
+            Twitter
+          </a>
           <a
-            href="https://github.com/ishandutta2007/chatgpt-scientific-publications-extension"
+            href="https://github.com/ishandutta2007/bard-google-extension"
             target="_blank"
             rel="noreferrer"
           >
