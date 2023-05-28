@@ -1,8 +1,8 @@
 {
   "appName": {
-    "message": "GoogleBard"
+    "message": "GoogleGPT"
   },
   "appDesc": {
-    "message": "Chat cu BARD pe toate căutările pe Google."
+    "message": "Chat cu ChatGPT pe toate căutările pe Google."
   }
 }

@@ -1,23 +1,24 @@
 import Browser from 'webextension-polyfill'
 import { getProviderConfigs, ProviderType } from '../config'
-import { BARDProvider, sendMessageFeedbackBard } from './providers/bard'
+// import { BARDProvider, sendMessageFeedbackBard } from './providers/bard'
 import { ChatGPTProvider, getChatGPTAccessToken, sendMessageFeedback } from './providers/chatgpt'
 import { OpenAIProvider } from './providers/openai'
-import { ConversationContext, Provider } from './types'
+import { Provider } from './types'
 
 async function generateAnswers(
   port: Browser.Runtime.Port,
   question: string,
   conversationId: string | undefined,
   parentMessageId: string | undefined,
-  conversationContext: ConversationContext | undefined,
+  // conversationContext: ConversationContext | undefined,
 ) {
   const providerConfigs = await getProviderConfigs()
 
   let provider: Provider
-  if (providerConfigs.provider === ProviderType.BARD) {
-    provider = new BARDProvider()
-  } else if (providerConfigs.provider === ProviderType.ChatGPT) {
+  // if (providerConfigs.provider === ProviderType.BARD) {
+  //   provider = new BARDProvider()
+  // } else
+  if (providerConfigs.provider === ProviderType.ChatGPT) {
     const token = await getChatGPTAccessToken()
     provider = new ChatGPTProvider(token)
   } else if (providerConfigs.provider === ProviderType.GPT3) {
@@ -45,20 +46,20 @@ async function generateAnswers(
     },
     conversationId: conversationId, //used for chatGPT
     parentMessageId: parentMessageId, //used for chatGPT
-    conversationContext: conversationContext, //used for BARD
+    // conversationContext: conversationContext, //used for BARD
   })
 }
 
 Browser.runtime.onConnect.addListener((port) => {
   port.onMessage.addListener(async (msg) => {
-    console.debug('received msg', msg)
+    console.debug('received question msg', msg)
     try {
       await generateAnswers(
         port,
         msg.question,
         msg.conversationId,
         msg.parentMessageId,
-        msg.conversationContext,
+        // msg.conversationContext,
       )
     } catch (err: any) {
       console.error(err)

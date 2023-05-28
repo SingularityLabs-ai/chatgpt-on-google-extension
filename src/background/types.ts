@@ -20,7 +20,7 @@ export interface GenerateAnswerParams {
   signal?: AbortSignal
   conversationId?: string
   parentMessageId?: string
-  conversationContext?: ConversationContext
+  // conversationContext?: ConversationContext
 }
 
 export interface Provider {

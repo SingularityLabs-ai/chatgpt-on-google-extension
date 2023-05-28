@@ -7,6 +7,7 @@ import Browser from 'webextension-polyfill'
 import { captureEvent } from '../analytics'
 import { Answer } from '../messaging'
 import ChatGPTFeedback from './ChatGPTFeedback'
+import Global from './Global'
 import { isBraveBrowser, shouldShowRatingTip } from './utils.js'
 
 export type QueryStatus = 'success' | 'error' | undefined
@@ -57,6 +58,14 @@ function ChatGPTQuery(props: Props) {
       } else if (msg.event === 'DONE') {
         setDone(true)
         setReQuestionDone(true)
+        Global.done = true
+        // window.setTimeout(function () {
+        //   if (Global.done == true) {
+        //     const gpt_container = document.querySelector('div.chat-gpt-container')
+        //     gpt_container.scroll({ top: gpt_container.scrollHeight, behavior: 'smooth' })
+        //     Global.done = false
+        //   }
+        // }, 1000)
       }
     }
     port.onMessage.addListener(listener)
@@ -123,10 +132,10 @@ function ChatGPTQuery(props: Props) {
         questionIndex == 0
           ? answer?.messageId
           : requestionList[questionIndex - 1].answer?.messageId,
-      conversationContext:
-        questionIndex == 0
-          ? answer?.conversationContext
-          : requestionList[questionIndex - 1].answer?.conversationContext,
+      // conversationContext:
+      //   questionIndex == 0
+      //     ? answer?.conversationContext
+      //     : requestionList[questionIndex - 1].answer?.conversationContext,
     })
     return () => {
       port.onMessage.removeListener(listener)
@@ -137,7 +146,7 @@ function ChatGPTQuery(props: Props) {
     questionIndex,
     answer?.conversationId,
     answer?.messageId,
-    answer?.conversationContext,
+    // answer?.conversationContext,
   ])
 
   // * Requery Handler Function
@@ -172,7 +181,7 @@ function ChatGPTQuery(props: Props) {
     return (
       <div className="markdown-body gpt-markdown" id="gpt-answer" dir="auto">
         <div className="gpt-header">
-          <span className="font-bold">GoogleBard</span>
+          <span className="font-bold">GoogleGPT</span>
           <span className="cursor-pointer leading-[0]" onClick={openOptionsPage}>
             <GearIcon size={14} />
           </span>
@@ -193,7 +202,7 @@ function ChatGPTQuery(props: Props) {
               }`}</div>
               {reError ? (
                 <p>
-                  Failed to load response from BARD:
+                  Failed to load response from ChatGPT:
                   <span className="break-all block">{reError}</span>
                 </p>
               ) : requestion.index < requestionList.length - 1 ? (
@@ -234,8 +243,8 @@ function ChatGPTQuery(props: Props) {
     return (
       <p>
         Please login and pass Cloudflare check at{' '}
-        <a href="https://bard.google.com" target="_blank" rel="noreferrer">
-          bard.google.com/
+        <a href="https://chat.openai.com" target="_blank" rel="noreferrer">
+          chat.openai.com
         </a>
         {retry > 0 &&
           (() => {
@@ -263,13 +272,13 @@ function ChatGPTQuery(props: Props) {
   if (error) {
     return (
       <p>
-        Failed to load response from BARD:
+        Failed to load response from ChatGPT:
         <span className="break-all block">{error}</span>
       </p>
     )
   }
 
-  return <p className="text-[#b6b8ba] animate-pulse">Waiting for BARD...</p>
+  return <p className="text-[#b6b8ba] animate-pulse">Waiting for ChatGPT...</p>
 }
 
 export default memo(ChatGPTQuery)
