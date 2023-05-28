@@ -77,6 +77,12 @@ export interface ProviderConfigs {
   }
 }
 
+export async function getChatGPTChatIds(): Promise<ChatGPTChatIds> {
+  const { conversationId = '0' } = await Browser.storage.local.get('conversationId')
+  const { messageId = '0' } = await Browser.storage.local.get('messageId')
+  return { conversationId, messageId }
+}
+
 export async function getProviderConfigs(): Promise<ProviderConfigs> {
   const { provider = ProviderType.ChatGPT } = await Browser.storage.local.get('provider')
   const configKey = `provider:${ProviderType.ChatGPT}`
