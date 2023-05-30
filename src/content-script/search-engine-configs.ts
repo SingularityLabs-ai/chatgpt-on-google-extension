@@ -10,7 +10,7 @@ export const config: Record<string, SearchEngine> = {
   google: {
     inputQuery: ['form textarea'],
     bodyQuery: ['form textarea'],
-    sidebarContainerQuery: ['#rcnt'],
-    appendContainerQuery: ['#res'],
+    sidebarContainerQuery: ['#rhs'],
+    appendContainerQuery: ['#rcnt'],
   },
 }

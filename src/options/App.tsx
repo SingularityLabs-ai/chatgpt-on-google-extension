@@ -101,11 +101,7 @@ function OptionsPage(props: { theme: Theme; onThemeChange: (theme: Theme) => voi
           Prompt
         </Text>
 
-        <PromptCard
-          header={'Prompt:'}
-          onSave={(prompt) => updateUserConfig({ prompt })}
-          prompt={prompt}
-        />
+        <PromptCard header={''} onSave={(prompt) => updateUserConfig({ prompt })} prompt={prompt} />
 
         {promptOverrides.map((override, index) => {
           return (
