@@ -96,6 +96,33 @@
       color: #ff6347;
     }
   }
+  #gpt-answer > div.all-questions-container > div.ith-question-container {
+    margin-top: 5px;
+    border-top: 1px solid rgba(145,158,171,.12);
+    border-right:  0px;
+    margin-bottom: 5px;
+    border-left:   0px;
+    div.requestion-answer-container {
+      margin: 5px;
+    }
+    div.followup-question-container {
+      position: relative;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-drag: none;
+      min-height: 24px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(56,114,224,.48);
+      border-radius: 0.7em;
+      font-size: 13px;
+      color: rgb(9, 105, 218);
+      gap: 4px;
+      background: rgb(230, 245, 255);
+    }
+  }
 }
 
 form#requestion {

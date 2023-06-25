@@ -8,6 +8,8 @@ import { captureEvent } from '../analytics'
 import { Answer } from '../messaging'
 import ChatGPTFeedback from './ChatGPTFeedback'
 import { isBraveBrowser, shouldShowRatingTip } from './utils.js'
+import { getCodeblock, getFollowupQuestionFromCodeblock } from '../utils/parse'
+import structuredClone from '@ungap/structured-clone';
 
 export type QueryStatus = 'success' | 'error' | undefined
 
@@ -57,7 +59,7 @@ function ChatGPTQuery(props: Props) {
       } else if (msg.event === 'DONE') {
         setDone(true)
         setReQuestionDone(true)
-        Global.done = true
+        // Global.done = true
         // window.setTimeout(function () {
         //   if (Global.done == true) {
         //     const gpt_container = document.querySelector('div.chat-gpt-container')
@@ -158,6 +160,23 @@ function ChatGPTQuery(props: Props) {
     }
   }, [requestionList, questionIndex])
 
+  const FollowupQuestionFixed = ({ followup_question }: { followup_question: string | undefined }) => {
+    const clickCopyToInput = useCallback(async () => {
+      if (reQuestionDone) {
+        inputRef.current.value = followup_question;
+        setTimeout(() => {requeryHandler()}, 500);
+      } else {
+        console.log("Wait untill the earlier prompt completes..");
+      }
+    }, [followup_question])
+
+    return (
+      <div class="followup-question-container" onClick={clickCopyToInput}>
+        <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>{followup_question}</ReactMarkdown>
+      </div>
+    )
+  }
+
   const ReQuestionAnswerFixed = ({ text }: { text: string | undefined }) => {
     if (!text) return <p className="text-[#b6b8ba] animate-pulse">Answering...</p>
     return (
@@ -177,6 +196,12 @@ function ChatGPTQuery(props: Props) {
   }
 
   if (answer) {
+    console.log("answer.text", answer.text);
+    const codeblock = getCodeblock(answer.text);
+    const ansCopy = structuredClone(answer.text);
+    const final_followups = getFollowupQuestionFromCodeblock(ansCopy);
+    console.log("followupQuestionArray", final_followups)
+
     return (
       <div className="markdown-body gpt-markdown" id="gpt-answer" dir="auto">
         <div className="gpt-header">
@@ -190,9 +215,19 @@ function ChatGPTQuery(props: Props) {
             latestAnswerText={answer.text}
           />
         </div>
-        <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>
-          {answer.text}
+        <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}>
+          {answer.text.replace("```" + codeblock + "```", "")}
         </ReactMarkdown>
+        <div className="all-questions-container">
+          {final_followups.map((followup_question) => (
+            <div className="ith-question-container">
+              {(
+                <FollowupQuestionFixed followup_question={followup_question} />
+              )}
+            </div>
+          ))}
+        </div>
+
         <div className="question-container">
           {requestionList.map((requestion) => (
             <div key={requestion.index}>

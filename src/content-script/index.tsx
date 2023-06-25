@@ -1,6 +1,7 @@
 import { render } from 'preact'
 import '../base.css'
 import { getUserConfig, Theme } from '../config'
+import { followupQuestionsPrompt } from '../utils/prompt'
 import { detectSystemColorScheme } from '../utils'
 import ChatGPTContainer from './ChatGPTContainer'
 import { config, SearchEngine } from './search-engine-configs'
@@ -98,11 +99,11 @@ async function run() {
       const found = userConfig.promptOverrides.find(
         (override) => new URL(override.site).hostname === location.hostname,
       )
-      const question = found?.prompt ?? userConfig.prompt
+      // const question = found?.prompt ?? userConfig.prompt
       const promptSource = found?.site ?? 'default'
 
-      console.log('final prompt:', question + bodyInnerText)
-      mount(question + bodyInnerText, promptSource, siteConfig)
+      // console.log('final prompt:', question + bodyInnerText)
+      mount(followupQuestionsPrompt(bodyInnerText), promptSource, siteConfig)
     }
   }
 }
