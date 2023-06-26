@@ -8,7 +8,7 @@ import { captureEvent } from '../analytics'
 import { Answer } from '../messaging'
 import ChatGPTFeedback from './ChatGPTFeedback'
 import { isBraveBrowser, shouldShowRatingTip } from './utils.js'
-import { getCodeblock, getFollowupQuestionFromCodeblock } from '../utils/parse'
+import { extract_followups_section, extract_followups } from '../utils/parse'
 import structuredClone from '@ungap/structured-clone';
 
 export type QueryStatus = 'success' | 'error' | undefined
@@ -35,7 +35,7 @@ function ChatGPTQuery(props: Props) {
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
   const [done, setDone] = useState(false)
-  const [showTip, setShowTip] = useState(false)
+  // const [showTip, setShowTip] = useState(false)
   const [status, setStatus] = useState<QueryStatus>()
   const [reError, setReError] = useState('')
   const [reQuestionDone, setReQuestionDone] = useState(false)
@@ -91,9 +91,9 @@ function ChatGPTQuery(props: Props) {
     }
   }, [error])
 
-  useEffect(() => {
-    shouldShowRatingTip().then((show) => setShowTip(show))
-  }, [])
+  // useEffect(() => {
+  //   shouldShowRatingTip().then((show) => setShowTip(show))
+  // }, [])
 
   useEffect(() => {
     if (status === 'success') {
@@ -197,10 +197,24 @@ function ChatGPTQuery(props: Props) {
 
   if (answer) {
     console.log("answer.text", answer.text);
-    const codeblock = getCodeblock(answer.text);
-    const ansCopy = structuredClone(answer.text);
-    const final_followups = getFollowupQuestionFromCodeblock(ansCopy);
-    console.log("followupQuestionArray", final_followups)
+    let followup_section = extract_followups_section(answer.text);
+    let final_followups = extract_followups(followup_section);
+
+    if (followup_section.length > 0) {
+      let rawsplits = followup_section.split("\n");
+      for(var i = 0; i < rawsplits.length; i++) {
+        let regnumexp = /[0-9]..*/gi;
+        let regbulletexp = /\* .*/gi;
+        if (rawsplits[i].match(regnumexp)) {
+          final_followups.push(rawsplits[i].slice(2).trim());
+        } else if (rawsplits[i].match(regbulletexp)) {
+          let finesplits = rawsplits[i].split("* ");
+          if (finesplits[finesplits.length-1].length > 4 && finesplits[finesplits.length-1].trim()[finesplits[finesplits.length-1].trim().length-1]=="?")
+            final_followups.push(finesplits[finesplits.length-1].trim());
+        }
+      }
+    }
+    let final_followups_deduped = [...new Set(final_followups)];
 
     return (
       <div className="markdown-body gpt-markdown" id="gpt-answer" dir="auto">
@@ -216,11 +230,11 @@ function ChatGPTQuery(props: Props) {
           />
         </div>
         <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}>
-          {answer.text.replace("```" + codeblock + "```", "")}
+          {answer.text.replace(followup_section, "")}
         </ReactMarkdown>
         <div className="all-questions-container">
-          {final_followups.map((followup_question) => (
-            <div className="ith-question-container">
+          {final_followups_deduped.map((followup_question, index) => (
+            <div className="ith-question-container" key={index}>
               {(
                 <FollowupQuestionFixed followup_question={followup_question} />
               )}

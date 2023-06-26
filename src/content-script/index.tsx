@@ -99,11 +99,12 @@ async function run() {
       const found = userConfig.promptOverrides.find(
         (override) => new URL(override.site).hostname === location.hostname,
       )
-      // const question = found?.prompt ?? userConfig.prompt
+      const question = found?.prompt ?? userConfig.prompt
       const promptSource = found?.site ?? 'default'
 
-      // console.log('final prompt:', question + bodyInnerText)
-      mount(followupQuestionsPrompt(bodyInnerText), promptSource, siteConfig)
+      const final_prompt = question +  bodyInnerText + ". " +  followupQuestionsPrompt(bodyInnerText);
+      console.log('final prompt:', final_prompt);// question + bodyInnerText)
+      mount(final_prompt, promptSource, siteConfig);
     }
   }
 }

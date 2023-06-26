@@ -1,28 +1,27 @@
-
-export const getCodeblock = (str:string) => {
-    const regex = /```(.*?)```/gs;
-    if (str) {
-      const matches = [...str.matchAll(regex)];
-      const codeBlocks = matches.map(match => match[1]);
-      // console.log("codeBlocks", codeBlocks);
-      if (codeBlocks && codeBlocks.length > 0) {
-        return codeBlocks[0];
-      }
-    }
-    return "";
+export function extract_followups_section(answer_text: string) {
+  const splits = answer_text.split(
+    /\**#{3}|#{2}|#{1}|#{0}\**\ *\**[fF]ollow-up [qQ]uestions:*\**/
+  );
+  let followup_section = "";
+  if (splits.length >= 2) {
+    followup_section = splits[splits.length - 1];
+  }
+  return followup_section;
 }
 
-export const getFollowupQuestionFromCodeblock = (str:string) => {
-    const regex = /```(.*?)```/gs;
-    if (str) {
-      const matches = [...str.matchAll(regex)];
-      const codeBlocks = matches.map(match => match[1]);
-      // console.log("codeBlocks", codeBlocks);
-      if (codeBlocks && codeBlocks.length > 0) {
-        let followupQuestionArray = JSON.parse(codeBlocks[0].replace('Python','').replace('python',''));
-        // console.log("followupQuestionArray", followupQuestionArray);
-        return followupQuestionArray;
-      }      
+export function extract_followups(followup_section: string) {
+  let final_followups = [];
+  if (followup_section.length > 0) {
+    let rawsplits = followup_section.split("\n");
+    for (var i = 0; i < rawsplits.length; i++) {
+      let regnumexp = /[0-9]..*/gi;
+      let regbulletexp = /[*+-] .*/gi;
+      if (rawsplits[i].match(regnumexp)) {
+        final_followups.push(rawsplits[i].slice(2).trim());
+      } else if (rawsplits[i].match(regbulletexp)) {
+        final_followups.push(rawsplits[i].replace(/[^a-zA-Z ,?]/g, ""));
+      }
     }
-    return [];
+  }
+  return final_followups;
 }
