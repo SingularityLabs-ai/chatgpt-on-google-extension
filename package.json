@@ -1,5 +1,5 @@
 {
-  "name": "bard-google-extension",
+  "name": "chatgpt-on-google-extension",
   "author": "ishandutta2007",
   "scripts": {
     "build": "node build.mjs",
