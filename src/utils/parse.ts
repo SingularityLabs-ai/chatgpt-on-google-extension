@@ -6,6 +6,7 @@ export function extract_followups_section(answer_text: string) {
   if (splits.length >= 2) {
     followup_section = splits[splits.length - 1];
   }
+  console.log("followup_section",followup_section)
   return followup_section;
 }
 
@@ -19,9 +20,19 @@ export function extract_followups(followup_section: string) {
       if (rawsplits[i].match(regnumexp)) {
         final_followups.push(rawsplits[i].slice(2).trim());
       } else if (rawsplits[i].match(regbulletexp)) {
-        final_followups.push(rawsplits[i].replace(/[^a-zA-Z ,?]/g, ""));
+        let x = rawsplits[i].replace(/[^a-zA-Z ,?]/g, "").trim();
+        if (x) {
+          final_followups.push(x);
+        } else {
+          let finesplits = rawsplits[i].split("* ");
+          if (finesplits[finesplits.length-1].length > 4 && finesplits[finesplits.length-1].trim()[finesplits[finesplits.length-1].trim().length-1]=="?")
+            final_followups.push(finesplits[finesplits.length-1].trim());
+        }
       }
     }
   }
-  return final_followups;
+
+  let final_followups_deduped = [...new Set(final_followups)];
+  console.log("final_followups_deduped",final_followups_deduped);
+  return final_followups_deduped;
 }
