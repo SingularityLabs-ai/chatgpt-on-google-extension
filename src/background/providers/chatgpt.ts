@@ -79,7 +79,7 @@ export class ChatGPTProvider implements Provider {
     }
 
     const modelName = await this.getModelName()
-    console.log('Using model:', modelName, params.conversationId, params.parentMessageId)
+    console.log('Using model:', modelName, 'params:', params)
 
     await fetchSSE('https://chat.openai.com/backend-api/conversation', {
       method: 'POST',
@@ -118,6 +118,11 @@ export class ChatGPTProvider implements Provider {
           console.error(err)
           return
         }
+        console.debug('sse message.message', data.message)
+        console.log('sse message.status:', data.message?.status)
+        console.log('sse message.metadata.message_type:', data.message?.metadata?.message_type)
+        console.log('sse message.end_turn:', data.message?.end_turn)
+        console.log('sse message.conversation_id:', data.conversation_id)
         const text = data.message?.content?.parts?.[0] + '✏'
         if (text) {
           Browser.storage.local.set({ conversationId: data.conversation_id })
