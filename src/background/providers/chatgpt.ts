@@ -371,7 +371,8 @@ export class ChatGPTProvider implements Provider {
           params.onEvent({
             type: 'error',
             data: {
-              error: 'Only one message at a time',
+              error:
+                'Only one message at a time. Please reload the page once the active message completes',
               conversationId: conversationId,
             },
           })

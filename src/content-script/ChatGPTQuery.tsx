@@ -118,7 +118,6 @@ function ChatGPTQuery(props: Props) {
           setReQuestionLatestAnswerText(latestAnswerText)
         } else if (msg.error) {
           setReError(msg.error)
-          setStatus('error')
           toast.error(msg.error)
         } else if (msg.event === 'DONE') {
           setReQuestionDone(true)
