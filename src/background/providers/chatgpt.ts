@@ -1,11 +1,20 @@
+import dayjs from 'dayjs'
 import ExpiryMap from 'expiry-map'
 import { v4 as uuidv4 } from 'uuid'
 import Browser from 'webextension-polyfill'
+import { isDate } from '../../utils/parse'
 import { fetchSSE } from '../fetch-sse'
 import { GenerateAnswerParams, Provider } from '../types'
-import { isDate } from '../../utils/parse'
+dayjs().format()
+const ADAY = 24 * 60 * 60 * 1000
 
-async function request(token: string, method: string, path: string, data?: unknown) {
+async function request(
+  token: string,
+  method: string,
+  path: string,
+  data?: unknown,
+  callback?: unknown,
+) {
   return fetch(`https://chat.openai.com/backend-api${path}`, {
     method,
     headers: {
@@ -14,6 +23,17 @@ async function request(token: string, method: string, path: string, data?: unkno
     },
     body: data === undefined ? undefined : JSON.stringify(data),
   })
+    .then(function (response) {
+      console.log('fetch', token, method, path, 'response', response)
+      return response.json()
+    })
+    .then(function (data) {
+      console.log('response data', data)
+      if (callback) callback(token, data)
+    })
+    .catch((error) => {
+      console.error('fetch', token, method, path, 'error', error)
+    })
 }
 
 export async function sendMessageFeedback(token: string, data: unknown) {
@@ -26,6 +46,30 @@ export async function setConversationProperty(
   propertyObject: object,
 ) {
   await request(token, 'PATCH', `/conversation/${conversationId}`, propertyObject)
+}
+
+function deleteRecentConversations(token, data) {
+  const now = dayjs()
+  const startTime = dayjs(performance.timeOrigin)
+  console.log('startTime', startTime)
+  const convs = data.items
+  for (let i = 0; i < convs.length; i++) {
+    const conv_i_time = dayjs(convs[i].create_time)
+    console.log(
+      'conv' + i,
+      convs[i].id,
+      conv_i_time,
+      conv_i_time - startTime,
+      now - conv_i_time,
+      now - conv_i_time < ADAY,
+    )
+    if (now - conv_i_time < ADAY) {
+      setTimeout(function () {
+        console.log('Deleting', token != null, convs[i].id)
+        setConversationProperty(token, convs[i].id, { is_visible: false })
+      }, i * 1000)
+    }
+  }
 }
 
 const KEY_ACCESS_TOKEN = 'accessToken'
@@ -62,13 +106,28 @@ export class ChatGPTProvider implements Provider {
         console.log('deleting conversation', delConversationId, 'token=', token)
         try {
           setConversationProperty(token, delConversationId, { is_visible: false })
-        } catch (e) {
-          console.error(e)
-        } finally {
           tabIdConversationIdMap.delete(tabid)
           console.log('deleted conversation', delConversationId)
+        } catch (e) {
+          console.error(
+            'deletion of conversation',
+            delConversationId,
+            'token=',
+            token,
+            'failed with error',
+            e,
+          )
         }
       }
+
+      //Brute:
+      request(
+        token,
+        'GET',
+        '/conversations?offset=0&limit=128&order=updated',
+        undefined,
+        deleteRecentConversations,
+      )
     })
 
     Browser.windows.onRemoved.addListener(function (windowid) {
@@ -81,9 +140,6 @@ export class ChatGPTProvider implements Provider {
           console.log('deleting conversation', delConversationIdsArray[i], 'token=', token)
           try {
             setConversationProperty(token, delConversationIdsArray[i], { is_visible: false })
-          } catch (e) {
-            console.error(e)
-          } finally {
             delConversationIdsConcatinated = delConversationIdsConcatinated.replace(
               delConversationIdsArray[i],
               '',
@@ -91,6 +147,15 @@ export class ChatGPTProvider implements Provider {
             delConversationIdsConcatinated = delConversationIdsConcatinated.replace(',,', ',')
             windowIdConversationIdMap.set(windowid, delConversationIdsConcatinated)
             console.log('deleted conversation:', delConversationIdsArray[i])
+          } catch (e) {
+            console.error(
+              'deletion of conversation',
+              delConversationId,
+              'token=',
+              token,
+              'failed with error',
+              e,
+            )
           }
         }
         if (
@@ -114,16 +179,21 @@ export class ChatGPTProvider implements Provider {
   private async fetchModels(): Promise<
     { slug: string; title: string; description: string; max_tokens: number }[]
   > {
-    const resp = await request(this.token, 'GET', '/models').then((r) => r.json())
+    const resp = await request(this.token, 'GET', '/models').then((r) => {
+      console.log('fetchModels', r)
+      return r.json()
+    })
     return resp.models
   }
 
   private async getModelName(): Promise<string> {
+    let models = ''
     try {
-      const models = await this.fetchModels()
+      models = await this.fetchModels()
+      console.log('models', models)
       return models[0].slug
     } catch (err) {
-      console.error(err)
+      console.error(models, err)
       return 'text-davinci-002-render'
     }
   }
@@ -140,13 +210,17 @@ export class ChatGPTProvider implements Provider {
         console.log('tabs:', tabs)
         for (let i = 0; i < tabs.length; i++) {
           if (tabs[i].active == true) {
-            let oldConvId = tabIdConversationIdMap.get(tabs[i].id);
+            const oldConvId = tabIdConversationIdMap.get(tabs[i].id)
             if (oldConvId) {
-              console.log("Already this tab has some conversationId.", oldConvId , "We have to delete that conversationTab first")
+              console.log(
+                'Already this tab has some conversationId.',
+                oldConvId,
+                'We have to delete that conversationTab first',
+              )
               try {
                 setConversationProperty(this.token, oldConvId, { is_visible: false })
               } catch (e) {
-                console.log("Deletion of ", oldConvId," failed with error", e)
+                console.log('Deletion of ', oldConvId, ' failed with error', e)
               }
             }
             tabIdConversationIdMap.set(tabs[i].id, convId)
@@ -161,9 +235,7 @@ export class ChatGPTProvider implements Provider {
         console.log('windows:', windows)
         for (let i = 0; i < windows.length; i++) {
           if (windows[i].focused == true) {
-            const alreadyConversationIdsInWindow = windowIdConversationIdMap.get(
-              windows[i].id,
-            )
+            const alreadyConversationIdsInWindow = windowIdConversationIdMap.get(windows[i].id)
             if (alreadyConversationIdsInWindow) {
               if (alreadyConversationIdsInWindow.indexOf(convId) == -1)
                 windowIdConversationIdMap.set(
@@ -175,7 +247,10 @@ export class ChatGPTProvider implements Provider {
             }
           }
         }
-        console.log('rememberConversationWindow:windowIdConversationIdMap:', windowIdConversationIdMap)
+        console.log(
+          'rememberConversationWindow:windowIdConversationIdMap:',
+          windowIdConversationIdMap,
+        )
       })
     }
 
@@ -183,22 +258,32 @@ export class ChatGPTProvider implements Provider {
       let ret = bigtext.split('\n', 1)[0]
       ret = ret.split('.', 1)[0]
       ret = 'GG:' + ret.split(':')[1].trim()
-      console.log("getConversationTitle:", ret)
+      console.log('getConversationTitle:', ret)
       return ret
     }
 
     const renameConversationTitle = (convId: string) => {
-      let titl: string = getConversationTitle(params.prompt)
+      const titl: string = getConversationTitle(params.prompt)
       console.log('renameConversationTitle:', this.token, convId, titl)
       setConversationProperty(this.token, convId, { title: titl })
     }
 
     const cleanup = () => {
       if (conversationId) {
-        setConversationProperty(this.token, conversationId, { is_visible: false })
+        try {
+          setConversationProperty(this.token, conversationId, { is_visible: false })
+        } catch (e) {
+          console.error(
+            'deletion of conversation',
+            conversationId,
+            'token=',
+            this.token,
+            'failed with error',
+            e,
+          )
+        }
       }
     }
-
 
     const modelName = await this.getModelName()
     console.log('Using model:', modelName, 'params:', params)
@@ -228,7 +313,7 @@ export class ChatGPTProvider implements Provider {
           conversation_id: with_conversation_id ? params.conversationId : undefined,
         }),
         onMessage(message: string) {
-          console.debug('sse message', message)
+          console.debug('sse message', message, tabIdConversationIdMap, windowIdConversationIdMap)
           if (message === '[DONE]') {
             params.onEvent({ type: 'done' })
             return
@@ -238,7 +323,7 @@ export class ChatGPTProvider implements Provider {
             data = JSON.parse(message)
           } catch (err) {
             if (isDate(message)) {
-              console.log("known error, It's date", message);
+              console.log("known error, It's date", message)
             } else {
               console.error(err)
             }
@@ -272,8 +357,8 @@ export class ChatGPTProvider implements Provider {
             }
 
             if (0 < countWords(text) && countWords(text) < 5) {
-              rememberConversationTab(data.conversation_id);
-              rememberConversationWindow(data.conversation_id);
+              rememberConversationTab(data.conversation_id)
+              rememberConversationWindow(data.conversation_id)
             }
           }
         },
