@@ -2,11 +2,11 @@ import dayjs from 'dayjs'
 import ExpiryMap from 'expiry-map'
 import { v4 as uuidv4 } from 'uuid'
 import Browser from 'webextension-polyfill'
+import { ADAYMILLIS, APPSHORTNAME } from '../../utils/consts'
 import { isDate } from '../../utils/parse'
 import { fetchSSE } from '../fetch-sse'
 import { GenerateAnswerParams, Provider } from '../types'
 dayjs().format()
-const ADAY = 24 * 60 * 60 * 1000
 
 async function request(
   token: string,
@@ -53,6 +53,7 @@ function deleteRecentConversations(token, data) {
   const startTime = dayjs(performance.timeOrigin)
   console.log('startTime', startTime)
   const convs = data.items
+  console.log('convs', convs)
   for (let i = 0; i < convs.length; i++) {
     const conv_i_time = dayjs(convs[i].create_time)
     console.log(
@@ -61,9 +62,9 @@ function deleteRecentConversations(token, data) {
       conv_i_time,
       conv_i_time - startTime,
       now - conv_i_time,
-      now - conv_i_time < ADAY,
+      now - conv_i_time < ADAYMILLIS,
     )
-    if (now - conv_i_time < ADAY) {
+    if (now - conv_i_time < ADAYMILLIS && convs[i].title.indexOf(APPSHORTNAME + ':') != -1) {
       setTimeout(function () {
         console.log('Deleting', token != null, convs[i].id)
         setConversationProperty(token, convs[i].id, { is_visible: false })
@@ -124,7 +125,7 @@ export class ChatGPTProvider implements Provider {
       request(
         token,
         'GET',
-        '/conversations?offset=0&limit=128&order=updated',
+        '/conversations?offset=0&limit=100&order=updated',
         undefined,
         deleteRecentConversations,
       )
@@ -211,7 +212,7 @@ export class ChatGPTProvider implements Provider {
         for (let i = 0; i < tabs.length; i++) {
           if (tabs[i].active == true) {
             const oldConvId = tabIdConversationIdMap.get(tabs[i].id)
-            if (oldConvId) {
+            if (oldConvId && oldConvId != convId) {
               console.log(
                 'Already this tab has some conversationId.',
                 oldConvId,
@@ -257,7 +258,7 @@ export class ChatGPTProvider implements Provider {
     const getConversationTitle = (bigtext: string) => {
       let ret = bigtext.split('\n', 1)[0]
       ret = ret.split('.', 1)[0]
-      ret = 'GG:' + ret.split(':')[1].trim()
+      ret = APPSHORTNAME + ':' + ret.split(':')[1].trim()
       console.log('getConversationTitle:', ret)
       return ret
     }
@@ -333,13 +334,18 @@ export class ChatGPTProvider implements Provider {
           console.log('sse message.conversation_id:', data.conversation_id)
           const text = data.message?.content?.parts?.[0] + '✏'
           if (text) {
-            if (
-              data.conversation_id &&
-              ((conversationId && conversationId != data.conversation_id) || conversationId == null)
-            ) {
-              if (params.prompt.indexOf('search query:') !== -1) {
-                renameConversationTitle(data.conversation_id)
+            if (countWords(text) == 1 && data.message.author.role == 'assistant') {
+              if (
+                data.conversation_id &&
+                ((conversationId && conversationId != data.conversation_id) ||
+                  conversationId == null)
+              ) {
+                if (params.prompt.indexOf('search query:') !== -1) {
+                  renameConversationTitle(data.conversation_id)
+                }
               }
+              rememberConversationTab(data.conversation_id)
+              rememberConversationWindow(data.conversation_id)
             }
             // Browser.storage.local.set({ conversationId: data.conversation_id })
             // Browser.storage.local.set({ messageId: data.message.id })
@@ -354,11 +360,6 @@ export class ChatGPTProvider implements Provider {
                   parentMessageId: data.parent_message_id,
                 },
               })
-            }
-
-            if (0 < countWords(text) && countWords(text) < 5) {
-              rememberConversationTab(data.conversation_id)
-              rememberConversationWindow(data.conversation_id)
             }
           }
         },
