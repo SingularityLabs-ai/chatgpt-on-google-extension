@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import Browser from 'webextension-polyfill'
 import { fetchSSE } from '../fetch-sse'
 import { GenerateAnswerParams, Provider } from '../types'
+import { isDate } from '../../utils/parse'
 
 async function request(token: string, method: string, path: string, data?: unknown) {
   return fetch(`https://chat.openai.com/backend-api${path}`, {
@@ -92,13 +93,13 @@ export class ChatGPTProvider implements Provider {
             console.log('deleted conversation:', delConversationIdsArray[i])
           }
         }
-      }
-      if (
-        windowIdConversationIdMap.get(windowid) == '' ||
-        windowIdConversationIdMap.get(windowid) == ','
-      ) {
-        windowIdConversationIdMap.delete(windowid)
-        console.log('deleted all conversations:', delConversationIdsArray)
+        if (
+          windowIdConversationIdMap.get(windowid) == '' ||
+          windowIdConversationIdMap.get(windowid) == ','
+        ) {
+          windowIdConversationIdMap.delete(windowid)
+          console.log('deleted all conversations:', delConversationIdsArray)
+        }
       }
       tabIdConversationIdMap.forEach((ConversationId, tabId, map) => {
         console.log('Looking for', ConversationId, tabId, 'in', map)
@@ -130,8 +131,65 @@ export class ChatGPTProvider implements Provider {
   async generateAnswer(params: GenerateAnswerParams) {
     let conversationId: string | undefined
 
-    const renameConversationTitle = (convId, titl) => {
-      console.log('Renaming', this.token, convId, titl)
+    const countWords = (text) => {
+      return text.trim().split(/\s+/).length
+    }
+
+    const rememberConversationTab = (convId: string) => {
+      Browser.tabs.query({ active: true, lastFocusedWindow: true }).then(async (tabs) => {
+        console.log('tabs:', tabs)
+        for (let i = 0; i < tabs.length; i++) {
+          if (tabs[i].active == true) {
+            let oldConvId = tabIdConversationIdMap.get(tabs[i].id);
+            if (oldConvId) {
+              console.log("Already this tab has some conversationId.", oldConvId , "We have to delete that conversationTab first")
+              try {
+                setConversationProperty(this.token, oldConvId, { is_visible: false })
+              } catch (e) {
+                console.log("Deletion of ", oldConvId," failed with error", e)
+              }
+            }
+            tabIdConversationIdMap.set(tabs[i].id, convId)
+          }
+        }
+        console.log('rememberConversationTab:tabIdConversationIdMap:', tabIdConversationIdMap)
+      })
+    }
+
+    const rememberConversationWindow = (convId: string) => {
+      Browser.windows.getAll({}).then(async (windows) => {
+        console.log('windows:', windows)
+        for (let i = 0; i < windows.length; i++) {
+          if (windows[i].focused == true) {
+            const alreadyConversationIdsInWindow = windowIdConversationIdMap.get(
+              windows[i].id,
+            )
+            if (alreadyConversationIdsInWindow) {
+              if (alreadyConversationIdsInWindow.indexOf(convId) == -1)
+                windowIdConversationIdMap.set(
+                  windows[i].id,
+                  alreadyConversationIdsInWindow + ',' + convId,
+                )
+            } else {
+              windowIdConversationIdMap.set(windows[i].id, convId)
+            }
+          }
+        }
+        console.log('rememberConversationWindow:windowIdConversationIdMap:', windowIdConversationIdMap)
+      })
+    }
+
+    const getConversationTitle = (bigtext: string) => {
+      let ret = bigtext.split('\n', 1)[0]
+      ret = ret.split('.', 1)[0]
+      ret = 'GG:' + ret.split(':')[1].trim()
+      console.log("getConversationTitle:", ret)
+      return ret
+    }
+
+    const renameConversationTitle = (convId: string) => {
+      let titl: string = getConversationTitle(params.prompt)
+      console.log('renameConversationTitle:', this.token, convId, titl)
       setConversationProperty(this.token, convId, { title: titl })
     }
 
@@ -141,11 +199,6 @@ export class ChatGPTProvider implements Provider {
       }
     }
 
-    const getConversationTitle = (bigtext: string) => {
-      let ret = bigtext.split('\n', 1)[0]
-      ret = ret.split('.', 1)[0]
-      return 'GG:' + ret.split(':')[1].trim()
-    }
 
     const modelName = await this.getModelName()
     console.log('Using model:', modelName, 'params:', params)
@@ -184,7 +237,11 @@ export class ChatGPTProvider implements Provider {
           try {
             data = JSON.parse(message)
           } catch (err) {
-            console.error(err)
+            if (isDate(message)) {
+              console.log("known error, It's date", message);
+            } else {
+              console.error(err)
+            }
             return
           }
           console.debug('sse message.message', data.message)
@@ -196,7 +253,7 @@ export class ChatGPTProvider implements Provider {
               ((conversationId && conversationId != data.conversation_id) || conversationId == null)
             ) {
               if (params.prompt.indexOf('search query:') !== -1) {
-                renameConversationTitle(data.conversation_id, getConversationTitle(params.prompt))
+                renameConversationTitle(data.conversation_id)
               }
             }
             // Browser.storage.local.set({ conversationId: data.conversation_id })
@@ -214,40 +271,9 @@ export class ChatGPTProvider implements Provider {
               })
             }
 
-            const countWords = (text) => {
-              return text.trim().split(/\s+/).length
-            }
             if (0 < countWords(text) && countWords(text) < 5) {
-              Browser.tabs.query({}).then(async (tabs) => {
-                console.log('tabs:', tabs)
-                for (let i = 0; i < tabs.length; i++) {
-                  if (tabs[i].active == true && !tabIdConversationIdMap.get(tabs[i].id)) {
-                    tabIdConversationIdMap.set(tabs[i].id, data.conversation_id)
-                  }
-                }
-                console.log('tabIdConversationIdMap:', tabIdConversationIdMap)
-              })
-
-              Browser.windows.getAll({}).then(async (windows) => {
-                console.log('windows:', windows)
-                for (let i = 0; i < windows.length; i++) {
-                  if (windows[i].focused == true) {
-                    const alreadyConversationIdsInWindow = windowIdConversationIdMap.get(
-                      windows[i].id,
-                    )
-                    if (alreadyConversationIdsInWindow) {
-                      if (alreadyConversationIdsInWindow.indexOf(data.conversation_id) == -1)
-                        windowIdConversationIdMap.set(
-                          windows[i].id,
-                          alreadyConversationIdsInWindow + ',' + data.conversation_id,
-                        )
-                    } else {
-                      windowIdConversationIdMap.set(windows[i].id, data.conversation_id)
-                    }
-                  }
-                }
-                console.log('windowIdConversationIdMap:', windowIdConversationIdMap)
-              })
+              rememberConversationTab(data.conversation_id);
+              rememberConversationWindow(data.conversation_id);
             }
           }
         },

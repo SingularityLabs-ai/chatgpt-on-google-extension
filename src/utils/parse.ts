@@ -36,3 +36,14 @@ export function extract_followups(followup_section: string) {
   console.log("final_followups_deduped",final_followups_deduped);
   return final_followups_deduped;
 }
+
+export function isDate(dateToTest: string) {
+  try {
+    if (dateToTest) {
+      dateToTest = dateToTest.replace(/\s+$/, '');
+    }
+    return isNaN(dateToTest) && !isNaN(Date.parse(dateToTest));
+  } catch(err) {
+    return false;
+  }
+}

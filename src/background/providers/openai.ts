@@ -1,5 +1,6 @@
 import { fetchSSE } from '../fetch-sse'
 import { GenerateAnswerParams, Provider } from '../types'
+import { isDate } from '../../utils/parse'
 
 export class OpenAIProvider implements Provider {
   constructor(private token: string, private model: string) {
@@ -53,7 +54,11 @@ export class OpenAIProvider implements Provider {
               },
             })
           } catch (err) {
-            console.error(err)
+            if (isDate(message)) {
+              console.log("known error, It's date", message);
+            } else {
+              console.error(err)
+            }
             return
           }
         },
