@@ -130,10 +130,21 @@ export class ChatGPTProvider implements Provider {
   async generateAnswer(params: GenerateAnswerParams) {
     let conversationId: string | undefined
 
+    const renameConversationTitle = (convId, titl) => {
+      console.log('Renaming', this.token, convId, titl)
+      setConversationProperty(this.token, convId, { title: titl })
+    }
+
     const cleanup = () => {
       if (conversationId) {
         setConversationProperty(this.token, conversationId, { is_visible: false })
       }
+    }
+
+    const getConversationTitle = (bigtext: string) => {
+      let ret = bigtext.split('\n', 1)[0]
+      ret = ret.split('.', 1)[0]
+      return 'GG:' + ret.split(':')[1].trim()
     }
 
     const modelName = await this.getModelName()
@@ -180,6 +191,14 @@ export class ChatGPTProvider implements Provider {
           console.log('sse message.conversation_id:', data.conversation_id)
           const text = data.message?.content?.parts?.[0] + '✏'
           if (text) {
+            if (
+              data.conversation_id &&
+              ((conversationId && conversationId != data.conversation_id) || conversationId == null)
+            ) {
+              if (params.prompt.indexOf('search query:') !== -1) {
+                renameConversationTitle(data.conversation_id, getConversationTitle(params.prompt))
+              }
+            }
             // Browser.storage.local.set({ conversationId: data.conversation_id })
             // Browser.storage.local.set({ messageId: data.message.id })
             if (data.message.author.role == 'assistant') {
