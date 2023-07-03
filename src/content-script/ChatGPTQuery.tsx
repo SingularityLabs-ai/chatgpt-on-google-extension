@@ -2,6 +2,8 @@ import { GearIcon } from '@primer/octicons-react'
 import { useEffect, useState } from 'preact/hooks'
 import { memo, useCallback, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import rehypeHighlight from 'rehype-highlight'
 import Browser from 'webextension-polyfill'
 import { captureEvent } from '../analytics'
@@ -49,15 +51,21 @@ function ChatGPTQuery(props: Props) {
     const port = Browser.runtime.connect()
     const listener = (msg: any) => {
       console.log('frontend msg:', msg)
-      if (msg.text) {
-        setAnswer(msg)
-        setStatus('success')
-      } else if (msg.error) {
-        setError(msg.error)
-        setStatus('error')
-      } else if (msg.event === 'DONE') {
-        setDone(true)
-        setReQuestionDone(true)
+      try {
+        if (msg.text) {
+          setAnswer(msg)
+          setStatus('success')
+        } else if (msg.error) {
+          console.log('frontend msg.error:', msg.error)
+          setError(msg.error)
+          setStatus('error')
+          toast.error(msg.error)
+        } else if (msg.event === 'DONE') {
+          setDone(true)
+          setReQuestionDone(true)
+        }
+      } catch (e) {
+        console.log(e)
       }
     }
     port.onMessage.addListener(listener)
@@ -108,12 +116,16 @@ function ChatGPTQuery(props: Props) {
           setRequestionList(requestionListValue)
           const latestAnswerText = requestionList[questionIndex]?.answer?.text
           setReQuestionLatestAnswerText(latestAnswerText)
+        } else if (msg.error) {
+          setReError(msg.error)
+          setStatus('error')
+          toast.error(msg.error)
         } else if (msg.event === 'DONE') {
           setReQuestionDone(true)
           setQuestionIndex(questionIndex + 1)
         }
-      } catch {
-        setReError(msg.error)
+      } catch (e) {
+        console.log(e)
       }
     }
     port.onMessage.addListener(listener)

@@ -1,8 +1,9 @@
 import { render } from 'preact'
+import { ToastContainer } from 'react-toastify'
 import '../base.css'
 import { getUserConfig, Theme } from '../config'
-import { followupQuestionsPrompt } from '../utils/prompt'
 import { detectSystemColorScheme } from '../utils'
+import { followupQuestionsPrompt } from '../utils/prompt'
 import ChatGPTContainer from './ChatGPTContainer'
 import { config, SearchEngine } from './search-engine-configs'
 import './styles.scss'
@@ -37,11 +38,14 @@ async function mount(question: string, promptSource: string, siteConfig: SearchE
   }
 
   render(
-    <ChatGPTContainer
-      question={question}
-      promptSource={promptSource}
-      triggerMode={userConfig.triggerMode || 'always'}
-    />,
+    <div>
+      <ChatGPTContainer
+        question={question}
+        promptSource={promptSource}
+        triggerMode={userConfig.triggerMode || 'always'}
+      />
+      <ToastContainer />
+    </div>,
     container,
   )
 }
@@ -102,9 +106,9 @@ async function run() {
       const question = found?.prompt ?? userConfig.prompt
       const promptSource = found?.site ?? 'default'
 
-      const final_prompt = question +  bodyInnerText + ". " +  followupQuestionsPrompt(bodyInnerText);
-      console.log('final prompt:', final_prompt);// question + bodyInnerText)
-      mount(final_prompt, promptSource, siteConfig);
+      const final_prompt = question + bodyInnerText + '. ' + followupQuestionsPrompt(bodyInnerText)
+      console.log('final prompt:', final_prompt) // question + bodyInnerText)
+      mount(final_prompt, promptSource, siteConfig)
     }
   }
 }

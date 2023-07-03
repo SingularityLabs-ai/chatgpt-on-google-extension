@@ -290,80 +290,104 @@ export class ChatGPTProvider implements Provider {
     console.log('Using model:', modelName, 'params:', params)
 
     const callfetchSSE = async (conversationId: string, with_conversation_id: bool) => {
-      await fetchSSE('https://chat.openai.com/backend-api/conversation', {
-        method: 'POST',
-        signal: params.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.token}`,
-        },
-        body: JSON.stringify({
-          action: 'next',
-          messages: [
-            {
-              id: uuidv4(),
-              role: 'user',
-              content: {
-                content_type: 'text',
-                parts: [params.prompt],
-              },
-            },
-          ],
-          model: modelName,
-          parent_message_id: params.parentMessageId || uuidv4(),
-          conversation_id: with_conversation_id ? params.conversationId : undefined,
-        }),
-        onMessage(message: string) {
-          console.debug('sse message', message, tabIdConversationIdMap, windowIdConversationIdMap)
-          if (message === '[DONE]') {
-            params.onEvent({ type: 'done' })
-            return
-          }
-          let data
-          try {
-            data = JSON.parse(message)
-          } catch (err) {
-            if (isDate(message)) {
-              console.log("known error, It's date", message)
-            } else {
-              console.error(err)
-            }
-            return
-          }
-          console.debug('sse message.message', data.message)
-          console.log('sse message.conversation_id:', data.conversation_id)
-          const text = data.message?.content?.parts?.[0] + '✏'
-          if (text) {
-            if (countWords(text) == 1 && data.message.author.role == 'assistant') {
-              if (
-                data.conversation_id &&
-                ((conversationId && conversationId != data.conversation_id) ||
-                  conversationId == null)
-              ) {
-                if (params.prompt.indexOf('search query:') !== -1) {
-                  renameConversationTitle(data.conversation_id)
-                }
-              }
-              rememberConversationTab(data.conversation_id)
-              rememberConversationWindow(data.conversation_id)
-            }
-            // Browser.storage.local.set({ conversationId: data.conversation_id })
-            // Browser.storage.local.set({ messageId: data.message.id })
-            if (data.message.author.role == 'assistant') {
-              conversationId = data.conversation_id
-              params.onEvent({
-                type: 'answer',
-                data: {
-                  text,
-                  messageId: data.message.id,
-                  conversationId: data.conversation_id,
-                  parentMessageId: data.parent_message_id,
+      try {
+        await fetchSSE('https://chat.openai.com/backend-api/conversation', {
+          method: 'POST',
+          signal: params.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.token}`,
+          },
+          body: JSON.stringify({
+            action: 'next',
+            messages: [
+              {
+                id: uuidv4(),
+                role: 'user',
+                content: {
+                  content_type: 'text',
+                  parts: [params.prompt],
                 },
-              })
+              },
+            ],
+            model: modelName,
+            parent_message_id: params.parentMessageId || uuidv4(),
+            conversation_id: with_conversation_id ? params.conversationId : undefined,
+          }),
+          onMessage(message: string) {
+            console.debug('sse message', message, tabIdConversationIdMap, windowIdConversationIdMap)
+            if (message === '[DONE]') {
+              params.onEvent({ type: 'done' })
+              return
             }
-          }
-        },
-      })
+            let data
+            try {
+              data = JSON.parse(message)
+            } catch (err) {
+              if (isDate(message)) {
+                console.log("known error, It's date", message)
+              } else {
+                console.error(err)
+              }
+              return
+            }
+            console.debug('sse message.message', data.message)
+            console.log('sse message.conversation_id:', data.conversation_id)
+            const text = data.message?.content?.parts?.[0] + '✏'
+            if (text) {
+              if (countWords(text) == 1 && data.message.author.role == 'assistant') {
+                if (
+                  data.conversation_id &&
+                  ((conversationId && conversationId != data.conversation_id) ||
+                    conversationId == null)
+                ) {
+                  if (params.prompt.indexOf('search query:') !== -1) {
+                    renameConversationTitle(data.conversation_id)
+                  }
+                }
+                rememberConversationTab(data.conversation_id)
+                rememberConversationWindow(data.conversation_id)
+              }
+              // Browser.storage.local.set({ conversationId: data.conversation_id })
+              // Browser.storage.local.set({ messageId: data.message.id })
+              if (data.message.author.role == 'assistant') {
+                conversationId = data.conversation_id
+                params.onEvent({
+                  type: 'answer',
+                  data: {
+                    text,
+                    messageId: data.message.id,
+                    conversationId: data.conversation_id,
+                    parentMessageId: data.parent_message_id,
+                  },
+                })
+              }
+            }
+          },
+        })
+      } catch (e) {
+        if (e.message.indexOf('Only one message at a time') != -1) {
+          console.log('known error, Only one message at a time', e.message)
+          params.onEvent({
+            type: 'error',
+            data: {
+              error: 'Only one message at a time',
+              conversationId: conversationId,
+            },
+          })
+        } else if (e.message.indexOf('ve reached our limit of messages per hour') != -1) {
+          console.log('known error, Reached our limit of messages per hour', e.message)
+          params.onEvent({
+            type: 'error',
+            data: {
+              error: 'You have reached our limit of messages per hour. Please try again later',
+              conversationId: conversationId,
+            },
+          })
+        } else {
+          console.error(e.message)
+        }
+      }
     }
 
     let retry_due_to_conversation_not_found: bool = false
