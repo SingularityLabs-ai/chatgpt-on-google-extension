@@ -24,7 +24,7 @@ async function request(
     body: data === undefined ? undefined : JSON.stringify(data),
   })
     .then(function (response) {
-      console.log('fetch', token, method, path, 'response', response)
+      console.log('fetch', token != null, method, path, 'response', response)
       return response.json()
     })
     .then(function (data) {
@@ -376,8 +376,6 @@ export class ChatGPTProvider implements Provider {
                 rememberConversationTab(data.conversation_id)
                 rememberConversationWindow(data.conversation_id)
               }
-              // Browser.storage.local.set({ conversationId: data.conversation_id })
-              // Browser.storage.local.set({ messageId: data.message.id })
               if (data.message.author.role == 'assistant') {
                 conversationId = data.conversation_id
                 params.onEvent({
@@ -390,8 +388,6 @@ export class ChatGPTProvider implements Provider {
                   },
                 })
               }
-              console.log('browsertabIdConversationIdMap', browsertabIdConversationIdMap)
-              console.log('windowIdConversationIdMap', windowIdConversationIdMap)
             }
           },
         })
