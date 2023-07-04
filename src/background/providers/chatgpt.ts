@@ -413,6 +413,9 @@ export class ChatGPTProvider implements Provider {
           })
         } else {
           console.error(e.message)
+          if (e.message.indexOf('conversation_not_found') != -1) {
+            throw new Error(e.message)
+          }
         }
       }
     }
