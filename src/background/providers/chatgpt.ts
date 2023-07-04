@@ -2,7 +2,7 @@ import dayjs from 'dayjs'
 import ExpiryMap from 'expiry-map'
 import { v4 as uuidv4 } from 'uuid'
 import Browser from 'webextension-polyfill'
-import { ADAYMILLIS, APPSHORTNAME } from '../../utils/consts'
+import { ADAY, APPSHORTNAME, HALFHOUR } from '../../utils/consts'
 import { isDate } from '../../utils/parse'
 import { fetchSSE } from '../fetch-sse'
 import { GenerateAnswerParams, Provider } from '../types'
@@ -48,6 +48,9 @@ export async function setConversationProperty(
   await request(token, 'PATCH', `/conversation/${conversationId}`, propertyObject)
 }
 
+const browsertabIdConversationIdMap = new Map()
+const windowIdConversationIdMap = new Map()
+
 function deleteRecentConversations(token, data) {
   const now = dayjs()
   const startTime = dayjs(performance.timeOrigin)
@@ -62,12 +65,39 @@ function deleteRecentConversations(token, data) {
       conv_i_time,
       conv_i_time - startTime,
       now - conv_i_time,
-      now - conv_i_time < ADAYMILLIS,
+      now - conv_i_time < ADAY,
     )
-    if (now - conv_i_time < ADAYMILLIS && convs[i].title.indexOf(APPSHORTNAME + ':') != -1) {
+    if (
+      HALFHOUR < now - conv_i_time &&
+      now - conv_i_time < ADAY &&
+      convs[i].title.indexOf(APPSHORTNAME + ':') != -1
+    ) {
       setTimeout(function () {
         console.log('Deleting', token != null, convs[i].id)
         setConversationProperty(token, convs[i].id, { is_visible: false })
+        const cloneBTCMap = new Map(browsertabIdConversationIdMap)
+        cloneBTCMap.forEach((ConversationId, tabId, map) => {
+          console.log('Looking for', ConversationId, tabId, 'in', map)
+          if (ConversationId == convs[i].id) {
+            console.log('Deleting ', ConversationId, tabId, 'from', map)
+            browsertabIdConversationIdMap.delete(tabid)
+            console.log(
+              'browsertabIdConversationIdMap after Deleting ',
+              browsertabIdConversationIdMap,
+            )
+          }
+        })
+        const cloneWCMap = new Map(windowIdConversationIdMap)
+        cloneWCMap.forEach((conversationIdsConcatinated, windowId, map) => {
+          console.log('Looking for', conversationIdsConcatinated, windowId, 'in', map)
+          if (conversationIdsConcatinated.indexOf(convs[i].id) != -1) {
+            console.log('Deleting ', convs[i].id, windowId, 'from', map)
+            conversationIdsConcatinated = conversationIdsConcatinated.replace(convs[i].id, '')
+            conversationIdsConcatinated = conversationIdsConcatinated.replace(',,', ',')
+            windowIdConversationIdMap.set(windowid, conversationIdsConcatinated)
+            console.log('windowIdConversationIdMap after Deleting ', windowIdConversationIdMap)
+          }
+        })
       }, i * 1000)
     }
   }
@@ -76,9 +106,6 @@ function deleteRecentConversations(token, data) {
 const KEY_ACCESS_TOKEN = 'accessToken'
 
 const cache = new ExpiryMap(10 * 1000)
-
-const tabIdConversationIdMap = new Map()
-const windowIdConversationIdMap = new Map()
 
 export async function getChatGPTAccessToken(): Promise<string> {
   if (cache.get(KEY_ACCESS_TOKEN)) {
@@ -101,13 +128,13 @@ export class ChatGPTProvider implements Provider {
     this.token = token
     Browser.tabs.onRemoved.addListener(function (tabid, removed) {
       console.log('tab closed', tabid, removed)
-      const delConversationId = tabIdConversationIdMap.get(tabid)
+      const delConversationId = browsertabIdConversationIdMap.get(tabid)
       console.log('delete conversation', delConversationId)
       if (delConversationId) {
         console.log('deleting conversation', delConversationId, 'token=', token)
         try {
           setConversationProperty(token, delConversationId, { is_visible: false })
-          tabIdConversationIdMap.delete(tabid)
+          browsertabIdConversationIdMap.delete(tabid)
           console.log('deleted conversation', delConversationId)
         } catch (e) {
           console.error(
@@ -167,13 +194,6 @@ export class ChatGPTProvider implements Provider {
           console.log('deleted all conversations:', delConversationIdsArray)
         }
       }
-      tabIdConversationIdMap.forEach((ConversationId, tabId, map) => {
-        console.log('Looking for', ConversationId, tabId, 'in', map)
-        // map.set(tabId, ConversationId + "A")
-        Browser.tabs.query({ id: tabId }).then(async (tab) => {
-          console.log('still open tab:', tab)
-        })
-      })
     })
   }
 
@@ -211,7 +231,7 @@ export class ChatGPTProvider implements Provider {
         console.log('tabs:', tabs)
         for (let i = 0; i < tabs.length; i++) {
           if (tabs[i].active == true) {
-            const oldConvId = tabIdConversationIdMap.get(tabs[i].id)
+            const oldConvId = browsertabIdConversationIdMap.get(tabs[i].id)
             if (oldConvId && oldConvId != convId) {
               console.log(
                 'Already this tab has some conversationId.',
@@ -224,10 +244,13 @@ export class ChatGPTProvider implements Provider {
                 console.log('Deletion of ', oldConvId, ' failed with error', e)
               }
             }
-            tabIdConversationIdMap.set(tabs[i].id, convId)
+            browsertabIdConversationIdMap.set(tabs[i].id, convId)
           }
         }
-        console.log('rememberConversationTab:tabIdConversationIdMap:', tabIdConversationIdMap)
+        console.log(
+          'rememberConversationTab:browsertabIdConversationIdMap:',
+          browsertabIdConversationIdMap,
+        )
       })
     }
 
@@ -315,7 +338,12 @@ export class ChatGPTProvider implements Provider {
             conversation_id: with_conversation_id ? params.conversationId : undefined,
           }),
           onMessage(message: string) {
-            console.debug('sse message', message, tabIdConversationIdMap, windowIdConversationIdMap)
+            console.debug(
+              'sse message',
+              message,
+              browsertabIdConversationIdMap,
+              windowIdConversationIdMap,
+            )
             if (message === '[DONE]') {
               params.onEvent({ type: 'done' })
               return
@@ -362,6 +390,8 @@ export class ChatGPTProvider implements Provider {
                   },
                 })
               }
+              console.log('browsertabIdConversationIdMap', browsertabIdConversationIdMap)
+              console.log('windowIdConversationIdMap', windowIdConversationIdMap)
             }
           },
         })
