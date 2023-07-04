@@ -418,28 +418,32 @@ export class ChatGPTProvider implements Provider {
     }
 
     let retry_due_to_conversation_not_found: bool = false
-    try {
-      callfetchSSE(conversationId, true)
-    } catch (e) {
-      console.error(e.message)
-      if (e.message.indexOf('conversation_not_found') !== -1) {
-        retry_due_to_conversation_not_found = true
-        console.log('Lets retry_due_to_conversation_not_found')
-      }
-      if (retry_due_to_conversation_not_found) {
-        try {
+    callfetchSSE(conversationId, true)
+      .then((r) => {
+        console.log(r)
+      })
+      .catch((e) => {
+        console.error(e.message)
+        if (e.message.indexOf('conversation_not_found') !== -1) {
+          retry_due_to_conversation_not_found = true
+          console.log('Lets retry_due_to_conversation_not_found')
+        }
+        if (retry_due_to_conversation_not_found) {
           cleanup()
           callfetchSSE(conversationId, false)
-          retry_due_to_conversation_not_found = false
-        } catch (e) {
-          console.error(e.message)
-          if (e.message.indexOf('conversation_not_found') !== -1) {
-            retry_due_to_conversation_not_found = true
-            console.log('Its still conversation_not_found')
-          }
+            .then((r) => {
+              console.log(r)
+              retry_due_to_conversation_not_found = false
+            })
+            .catch((e) => {
+              console.error(e.message)
+              if (e.message.indexOf('conversation_not_found') !== -1) {
+                retry_due_to_conversation_not_found = true
+                console.log('Its still conversation_not_found')
+              }
+            })
         }
-      }
-    }
+      })
     return { cleanup }
   }
 }
