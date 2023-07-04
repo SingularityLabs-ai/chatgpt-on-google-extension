@@ -174,7 +174,9 @@ function ChatGPTQuery(props: Props) {
           requeryHandler()
         }, 500)
       } else {
-        console.log('Wait untill the earlier prompt completes..')
+        const warnMsg = 'Wait untill the earlier prompt completes'
+        console.log(warnMsg + '..')
+        toast.warn(warnMsg)
       }
     }, [followup_question])
 
