@@ -6,7 +6,7 @@
 
 ## Screenshot
 
-<img width="1418" alt="image" src="https://github.com/ishandutta2007/chatgpt-on-google-extension/blob/main/screenshots/GGPT_Screenshot_1280x800.png">
+<img width="1418" alt="image" src="https://github.com/SingularityLabs-ai/chatgpt-on-google-extension/blob/main/screenshots/GGPT_Screenshot_1280x800.png">
 
 ## Troubleshooting
 

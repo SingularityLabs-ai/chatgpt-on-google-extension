@@ -24,6 +24,15 @@ export function isBraveBrowser() {
   return (navigator as any).brave?.isBrave()
 }
 
+export async function usedForMins() {
+  const { usedForMins = 0 } = await Browser.storage.local.get('usedForMins')
+  if (ratingTipShowTimes >= 5) {
+    return false
+  }
+  await Browser.storage.local.set({ totalTime: totalTime + (Date.now() - startTime) })
+  return ratingTipShowTimes >= 2
+}
+
 export async function shouldShowRatingTip() {
   const { ratingTipShowTimes = 0 } = await Browser.storage.local.get('ratingTipShowTimes')
   if (ratingTipShowTimes >= 5) {

@@ -77,7 +77,7 @@ function OptionsPage(props: { theme: Theme; onThemeChange: (theme: Theme) => voi
             Discord
           </a>
           <a
-            href="https://github.com/ishandutta2007/chatgpt-on-google-extension/issues"
+            href="https://github.com/SingularityLabs-ai/chatgpt-on-google-extension/issues"
             target="_blank"
             rel="noreferrer"
           >
@@ -87,7 +87,7 @@ function OptionsPage(props: { theme: Theme; onThemeChange: (theme: Theme) => voi
             Twitter
           </a>
           <a
-            href="https://github.com/ishandutta2007/chatgpt-on-google-extension"
+            href="https://github.com/SingularityLabs-ai/chatgpt-on-google-extension"
             target="_blank"
             rel="noreferrer"
           >

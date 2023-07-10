@@ -2,7 +2,7 @@ import { GearIcon } from '@primer/octicons-react'
 import { useEffect, useState } from 'preact/hooks'
 import { memo, useCallback, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { toast } from 'react-toastify'
+import { toast, Zoom } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import rehypeHighlight from 'rehype-highlight'
 import Browser from 'webextension-polyfill'
@@ -59,7 +59,7 @@ function ChatGPTQuery(props: Props) {
           console.log('frontend msg.error:', msg.error)
           setError(msg.error)
           setStatus('error')
-          toast.error(msg.error)
+          toast.error(msg.error, { position: 'bottom-right', transition: Zoom })
         } else if (msg.event === 'DONE') {
           setDone(true)
           setReQuestionDone(true)
@@ -118,7 +118,7 @@ function ChatGPTQuery(props: Props) {
           setReQuestionLatestAnswerText(latestAnswerText)
         } else if (msg.error) {
           setReError(msg.error)
-          toast.error(msg.error)
+          toast.error(msg.error, { position: 'bottom-right', transition: Zoom })
         } else if (msg.event === 'DONE') {
           setReQuestionDone(true)
           setQuestionIndex(questionIndex + 1)
@@ -176,7 +176,7 @@ function ChatGPTQuery(props: Props) {
       } else {
         const warnMsg = 'Wait untill the earlier prompt completes'
         console.log(warnMsg + '..')
-        toast.warn(warnMsg)
+        toast.warn(warnMsg, { position: 'bottom-right', transition: Zoom })
       }
     }, [followup_question])
 
@@ -275,6 +275,7 @@ function ChatGPTQuery(props: Props) {
             <button id="submit" onClick={requeryHandler}>
               ASK
             </button>
+            <p> Used for mins . showTip shown {showTip} times </p>
           </form>
         )}
       </div>
