@@ -275,7 +275,6 @@ function ChatGPTQuery(props: Props) {
             <button id="submit" onClick={requeryHandler}>
               ASK
             </button>
-            <p> Used for mins . showTip shown {showTip} times </p>
           </form>
         )}
       </div>
