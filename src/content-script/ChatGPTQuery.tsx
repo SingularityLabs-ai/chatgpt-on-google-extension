@@ -1,15 +1,15 @@
 import { GearIcon } from '@primer/octicons-react'
 import { useEffect, useState } from 'preact/hooks'
 import { memo, useCallback, useRef } from 'react'
-import ReactMarkdown from 'react-markdown'
+// import ReactMarkdown from 'react-markdown'
 import { toast, Zoom } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import rehypeHighlight from 'rehype-highlight'
 import Browser from 'webextension-polyfill'
 import { captureEvent } from '../analytics'
 import { Answer } from '../messaging'
 import { extract_followups, extract_followups_section } from '../utils/parse'
 import ChatGPTFeedback from './ChatGPTFeedback'
+import Markdown from './Markdown'
 import { isBraveBrowser, shouldShowRatingTip } from './utils.js'
 
 export type QueryStatus = 'success' | 'error' | undefined
@@ -17,6 +17,7 @@ export type QueryStatus = 'success' | 'error' | undefined
 interface Props {
   question: string
   onStatusChange?: (status: QueryStatus) => void
+  arkoseToken: string
 }
 
 interface Requestion {
@@ -69,7 +70,7 @@ function ChatGPTQuery(props: Props) {
       }
     }
     port.onMessage.addListener(listener)
-    port.postMessage({ question: props.question })
+    port.postMessage({ question: props.question, arkose_token: props.arkoseToken })
     return () => {
       port.onMessage.removeListener(listener)
       port.disconnect()
@@ -135,6 +136,7 @@ function ChatGPTQuery(props: Props) {
         questionIndex == 0
           ? answer?.messageId
           : requestionList[questionIndex - 1].answer?.messageId,
+      arkose_token: props.arkoseToken,
       // conversationContext:
       //   questionIndex == 0
       //     ? answer?.conversationContext
@@ -179,38 +181,40 @@ function ChatGPTQuery(props: Props) {
         toast.warn(warnMsg, { position: 'bottom-right', transition: Zoom })
       }
     }, [followup_question])
+    // <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>
+    //   {followup_question}
+    // </ReactMarkdown>
 
     return (
       <div className="followup-question-container" onClick={clickCopyToInput}>
-        <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>
-          {followup_question}
-        </ReactMarkdown>
+        <Markdown>{followup_question}</Markdown>
       </div>
     )
   }
 
   const ReQuestionAnswerFixed = ({ text }: { text: string | undefined }) => {
     if (!text) return <p className="text-[#b6b8ba] animate-pulse">Answering...</p>
-    return (
-      <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>{text}</ReactMarkdown>
-    )
+    // <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>{text}</ReactMarkdown>
+    return <Markdown>{text}</Markdown>
   }
 
   const ReQuestionAnswer = ({ latestAnswerText }: ReQuestionAnswerProps) => {
     if (!latestAnswerText || requestionList[requestionList.length - 1]?.answer?.text == undefined) {
       return <p className="text-[#b6b8ba] animate-pulse">Answering...</p>
     }
-    return (
-      <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>
-        {latestAnswerText}
-      </ReactMarkdown>
-    )
+    // <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>
+    //   {latestAnswerText}
+    // </ReactMarkdown>
+    return <Markdown>{latestAnswerText}</Markdown>
   }
 
   if (answer) {
     console.log('answer.text', answer.text)
     const followup_section = extract_followups_section(answer.text)
     const final_followups = extract_followups(followup_section)
+    // <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>
+    //   {answer.text.replace(followup_section, '')}
+    // </ReactMarkdown>
 
     return (
       <div className="markdown-body gpt-markdown" id="gpt-answer" dir="auto">
@@ -222,12 +226,11 @@ function ChatGPTQuery(props: Props) {
           <ChatGPTFeedback
             messageId={answer.messageId}
             conversationId={answer.conversationId}
+            arkoseToken={props.arkoseToken}
             latestAnswerText={answer.text}
           />
         </div>
-        <ReactMarkdown rehypePlugins={[[rehypeHighlight, { detect: true }]]}>
-          {answer.text.replace(followup_section, '')}
-        </ReactMarkdown>
+        <Markdown>{answer.text.replace(followup_section, '')}</Markdown>
         <div className="all-questions-container">
           {final_followups.map((followup_question, index) => (
             <div className="ith-question-container" key={index}>

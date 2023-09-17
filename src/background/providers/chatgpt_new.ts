@@ -220,6 +220,7 @@ export class ChatGPTProvider implements Provider {
   }
 
   async generateAnswer(params: GenerateAnswerParams) {
+    console.log('chatgpt_new', params.arkoseToken)
     let conversationId: string | undefined
 
     const countWords = (text) => {
@@ -336,6 +337,7 @@ export class ChatGPTProvider implements Provider {
             model: modelName,
             parent_message_id: params.parentMessageId || uuidv4(),
             conversation_id: with_conversation_id ? params.conversationId : undefined,
+            arkose_token: params.arkoseToken,
           }),
           onMessage(message: string) {
             console.debug(

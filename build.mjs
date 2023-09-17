@@ -2,6 +2,7 @@ import archiver from 'archiver'
 import autoprefixer from 'autoprefixer'
 import * as dotenv from 'dotenv'
 import esbuild from 'esbuild'
+import copyStaticFiles from 'esbuild-copy-static-files'
 import postcssPlugin from 'esbuild-style-plugin'
 import fs from 'fs-extra'
 import process from 'node:process'
@@ -38,8 +39,19 @@ async function runEsbuild() {
     jsx: 'automatic',
     loader: {
       '.png': 'dataurl',
+      '.ttf': 'dataurl',
+      '.woff': 'dataurl',
+      '.woff2': 'dataurl',
     },
     plugins: [
+      copyStaticFiles({
+        src: './public',
+        dest: 'build/.',
+        dereference: true,
+        errorOnExist: false,
+        preserveTimestamps: true,
+        recursive: true,
+      }),
       postcssPlugin({
         postcss: {
           plugins: [tailwindcss, autoprefixer],
@@ -84,6 +96,7 @@ async function build() {
     { src: 'src/popup/index.html', dst: 'popup.html' },
     { src: 'src/logo.png', dst: 'logo.png' },
     { src: 'src/_locales', dst: '_locales' },
+    { src: 'build/js', dst: 'js' },
   ]
 
   // chromium

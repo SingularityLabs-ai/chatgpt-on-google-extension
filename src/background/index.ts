@@ -8,6 +8,7 @@ import { Provider } from './types'
 async function generateAnswers(
   port: Browser.Runtime.Port,
   question: string,
+  arkose_token: string,
   conversationId: string | undefined,
   parentMessageId: string | undefined,
   // conversationContext: ConversationContext | undefined,
@@ -57,6 +58,7 @@ async function generateAnswers(
     conversationId: conversationId, //used for chatGPT
     parentMessageId: parentMessageId, //used for chatGPT
     // conversationContext: conversationContext, //used for BARD
+    arkoseToken: arkose_token,
   })
 }
 
@@ -67,6 +69,7 @@ Browser.runtime.onConnect.addListener((port) => {
       await generateAnswers(
         port,
         msg.question,
+        msg.arkose_token,
         msg.conversationId,
         msg.parentMessageId,
         // msg.conversationContext,
