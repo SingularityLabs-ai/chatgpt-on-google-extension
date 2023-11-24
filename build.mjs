@@ -39,6 +39,7 @@ async function runEsbuild() {
     jsx: 'automatic',
     loader: {
       '.png': 'dataurl',
+      '.svg': 'dataurl',
       '.ttf': 'dataurl',
       '.woff': 'dataurl',
       '.woff2': 'dataurl',
