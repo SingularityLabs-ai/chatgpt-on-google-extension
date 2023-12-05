@@ -2,7 +2,7 @@
     <img src="./src/logo.png" width="150">
 </p>
 
-<h1 align="center">SciGPT</h1>
+<h1 align="center">GoogleGPT</h1>
 
 
 <div align="center">
