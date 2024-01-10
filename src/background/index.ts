@@ -6,6 +6,7 @@ import { OpenAIProvider } from './providers/openai'
 import { Provider } from './types'
 
 const GOOGLEGPT_UNINSTALL_TYPEFORM_URL = 'https://survey.typeform.com/to/E1L8qCQw'
+const GOOGLEGPT_UNINSTALL_TALLY_URL = 'https://tally.so/r/wvY4Bd'
 
 async function generateAnswers(
   port: Browser.Runtime.Port,
@@ -105,4 +106,11 @@ Browser.runtime.onInstalled.addListener((details) => {
   }
 })
 
-Browser.runtime.setUninstallURL(GOOGLEGPT_UNINSTALL_TYPEFORM_URL)
+function getUninstallURL(): any {
+  const arr = Array(99).fill(GOOGLEGPT_UNINSTALL_TALLY_URL)
+  arr.push(GOOGLEGPT_UNINSTALL_TYPEFORM_URL)
+  const index = Math.floor(Math.random() * arr.length)
+  return arr[index]
+}
+
+Browser.runtime.setUninstallURL(getUninstallURL())
