@@ -1,8 +1,8 @@
 {
-  "appName": {
-    "message": "GoogleGPT"
-  },
-  "appDesc": {
-    "message": "Спілкуйтеся з ChatGPT у всіх пошукових запитах Google."
-  }
+    "appName": {
+        "message": "ChatGPT для Google безкоштовно"
+    },
+    "appDesc": {
+        "message": "ChatGPT для всіх пошукових запитів Google."
+    }
 }
