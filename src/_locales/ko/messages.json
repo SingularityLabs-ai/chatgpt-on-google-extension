@@ -1,8 +1,8 @@
 {
     "appName": {
-        "message": "Google을 위한 무료 ChatGPT"
+        "message": "Google용 무료 ChatGPT"
     },
     "appDesc": {
-        "message": "모든 Google 검색에서 ChatGPT를 사용하세요."
+        "message": "모든 Google 검색에 ChatGPT 추가"
     }
 }

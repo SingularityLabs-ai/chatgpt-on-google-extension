@@ -1,8 +1,8 @@
 {
-    "appName": {
-        "message": "ChatGPT for Google for free"
+    "ऐपनाम": {
+        "संदेश": "Google के लिए चैटजीपीटी निःशुल्क"
     },
-    "appDesc": {
-        "message": "ChatGPT on all Google search."
+    "ऐपडेस्क": {
+        "संदेश": "सभी Google खोजों में चैटजीपीटी जोड़ें"
     }
 }
