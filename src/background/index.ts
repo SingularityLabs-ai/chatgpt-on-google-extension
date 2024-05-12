@@ -1,7 +1,8 @@
 import Browser from 'webextension-polyfill'
 import { getChatGPTChatIds, getProviderConfigs, ProviderType } from '../config'
 // import { BARDProvider, sendMessageFeedbackBard } from './providers/bard'
-import { ChatGPTProvider, getChatGPTAccessToken, sendMessageFeedback } from './providers/chatgpt'
+// import { ChatGPTProvider, getChatGPTAccessToken, sendMessageFeedback } from './providers/chatgpt'
+import { ChatGPTProvider, getChatGPTAccessToken, sendMessageFeedback } from 'llm-playground-chain'
 import { OpenAIProvider } from './providers/openai'
 import { Provider } from './types'
 
